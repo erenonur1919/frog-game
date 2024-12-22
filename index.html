@@ -186,7 +186,25 @@
         let wordWeights = Array(words.length).fill(1);
 
         const backgroundSound = document.getElementById('background-sound');
-        backgroundSound.volume = 0.1; // Adjust volume as needed
+        backgroundSound.volume = 0.5; // Adjust volume as needed
+
+
+        function playBackgroundSound() {
+            backgroundSound.volume = 0.5; // Set a reasonable volume level
+            backgroundSound.play().catch(error => {
+                console.error('Background sound failed to play:', error);
+            });
+        }
+
+        startButton.addEventListener('click', () => {
+            playBackgroundSound();
+        });
+
+        restartButton.addEventListener('click', () => {
+            playBackgroundSound();
+        });
+
+
 
         let score = 0;
         let currentRow = 200;
