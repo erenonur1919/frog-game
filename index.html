@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Frog Jump Game</title>
+    <title>Zıplama Oyunu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
     <style>
         body {
             margin: 0;
@@ -109,6 +112,7 @@
             font-weight: bold;
             color: white;
             text-align: center;
+            font-family: "Quicksand", Arial, sans-serif;
         }
 
         .game-over {
@@ -145,6 +149,11 @@
     </style>
 </head>
 <body>
+    <audio id="background-sound" loop autoplay preload="auto" autoplay="true" loop="true">
+        <source src="https://www.soundjay.com/free-music/sounds/cautious-path-01.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
     <video id="background-video" autoplay loop muted>
         <source src="bg_video.mp4" type="video/mp4">
         Your browser does not support the video tag.
@@ -175,6 +184,9 @@
         const backgroundVideo = document.getElementById('background-video');
         const words = ['maç', 'saç', 'taç', 'kaç', 'seç', 'suç', 'açı', 'çin', 'çatal', 'çene', 'ölçü', 'çilek', 'çizme', 'çanta'];
         let wordWeights = Array(words.length).fill(1);
+
+        const backgroundSound = document.getElementById('background-sound');
+        backgroundSound.volume = 0.1; // Adjust volume as needed
 
         let score = 0;
         let currentRow = 200;
