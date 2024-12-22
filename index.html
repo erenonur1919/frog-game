@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frog Jump Game</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        #background-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            z-index: -1;
+            background: black;
+        }
+
+        #score-display, #timer-display {
+            position: fixed;
+            top: 10px;
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 10px;
+            z-index: 10;
+        }
+
+        #score-display {
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+        }
+
+        #timer-display {
+            right: 10px;
+            display: none;
+        }
+
+        #game-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 600px;
+            height: 800px;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+
+        #start-button {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        #start-button:hover {
+            background-color: #218838;
+        }
+
+        .frog {
+            position: absolute;
+            width: 200px;
+            height: 150px;
+            left: 50%;
+            bottom: 20px;
+            transform: translateX(-50%);
+            transition: bottom 0.5s, left 0.5s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .frog img {
+            width: 100%;
+            height: 100%;
+        }
+
+        .leaf {
+            position: absolute;
+            width: 200px;
+            height: 100px;
+            background: url('tugla.webp') no-repeat center center;
+            background-size: cover;
+            border-radius: 10px;
+        }
+
+        .leaf-content {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+        }
+
+        .game-over {
+            position: fixed;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            color: red;
+            text-align: center;
+            display: none;
+            z-index: 100;
+        }
+
+        #restart-button {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5rem;
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            z-index: 100;
+            display: none;
+        }
+
+        #restart-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <video id="background-video" autoplay loop muted>
+        <source src="bg_video.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <div id="score-display">Skor: 0</div>
+    <div id="timer-display">Süre: 120</div>
+
+    <div id="game-container">
+        <div class="frog" id="frog">
+            <img src="mario2.png" alt="Mario">
+        </div>
+        <div class="game-over" id="game-over">Oyun Bitti! Skorun: <span id="final-score"></span></div>
+        <button id="restart-button">Tekrar Başla</button>
+    </div>
+
+    <button id="start-button">OYUNA BAŞLA</button>
+
+    <script>
+        const frog = document.getElementById('frog');
+        const gameContainer = document.getElementById('game-container');
+        const gameOverText = document.getElementById('game-over');
+        const scoreDisplay = document.getElementById('score-display');
+        const timerDisplay = document.getElementById('timer-display');
+        const restartButton = document.getElementById('restart-button');
+        const startButton = document.getElementById('start-button');
+        const finalScore = document.getElementById('final-score');
+        const backgroundVideo = document.getElementById('background-video');
+        const words = ['maç', 'saç', 'taç', 'kaç', 'seç', 'suç', 'açı', 'çin', 'çatal', 'çene', 'ölçü', 'çilek', 'çizme', 'çanta'];
+        let wordWeights = Array(words.length).fill(1);
+
+        let score = 0;
+        let currentRow = 200;
+        let currentAudio = null;
+        let timer = 120;
+        let timerInterval;
+
+        function startTimer() {
+            timerDisplay.style.display = 'block';
+            timerInterval = setInterval(() => {
+                timer--;
+                timerDisplay.textContent = `Süre: ${timer}`;
+
+                if (timer <= 0) {
+                    clearInterval(timerInterval);
+                    gameOver();
+                }
+            }, 1000);
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            timer = 120;
+            timerDisplay.textContent = `Süre: ${timer}`;
+        }
+
+        function selectWeightedWord() {
+            const totalWeight = wordWeights.reduce((total, weight) => total + weight, 0);
+            const randomValue = Math.random() * totalWeight;
+            let cumulativeWeight = 0;
+
+            for (let i = 0; i < words.length; i++) {
+                cumulativeWeight += wordWeights[i];
+                if (randomValue < cumulativeWeight) {
+                    return i;
+                }
+            }
+        }
+
+        function getCorrectWord() {
+            const selectedIndex = selectWeightedWord();
+            updateWordWeights(selectedIndex);
+            return words[selectedIndex];
+        }
+
+        function updateWordWeights(selectedIndex) {
+            wordWeights[selectedIndex] *= 0.5;
+            for (let i = 0; i < wordWeights.length; i++) {
+                if (i !== selectedIndex) {
+                    wordWeights[i] += 0.1;
+                }
+            }
+        }
+
+        function createLeaves(correctWord) {
+            const leaves = [];
+            const positions = ["10%", "45%", "80%"];
+            const randomIndex = Math.floor(Math.random() * 3);
+
+            for (let i = 0; i < 3; i++) {
+                const leaf = document.createElement('div');
+                leaf.classList.add('leaf');
+                leaf.style.left = positions[i];
+                leaf.style.bottom = `${currentRow}px`;
+
+                const content = document.createElement('div');
+                content.classList.add('leaf-content');
+
+                if (i === randomIndex) {
+                    content.textContent = correctWord;
+                    leaf.dataset.correct = 'true';
+                } else {
+                    const wrongWords = words.filter(word => word !== correctWord);
+                    const wrongWord = wrongWords[Math.floor(Math.random() * wrongWords.length)];
+                    content.textContent = wrongWord || "Fallback";
+                    leaf.dataset.correct = 'false';
+                }
+
+                leaf.appendChild(content);
+                leaf.addEventListener('click', handleLeafClick);
+                leaves.push(leaf);
+                gameContainer.appendChild(leaf);
+            }
+        }
+
+        function resetLeaves(correctWord) {
+            currentRow += 200;
+            createLeaves(correctWord);
+        }
+
+        function jumpToLeaf(leaf) {
+            const leafBounds = leaf.getBoundingClientRect();
+            const containerBounds = gameContainer.getBoundingClientRect();
+
+            const newLeft = leafBounds.left + leafBounds.width / 2 - containerBounds.left - frog.offsetWidth / 2 + 60;
+            frog.style.left = `${newLeft}px`;
+
+            const newBottom = gameContainer.offsetHeight - (leafBounds.bottom - containerBounds.top) + 60;
+            frog.style.bottom = `${newBottom}px`;
+
+            const minRequiredHeight = newBottom + 300;
+            if (minRequiredHeight > gameContainer.offsetHeight) {
+                gameContainer.style.height = `${minRequiredHeight}px`;
+                gameContainer.style.transform = `translate(-50%, calc(-50% + ${minRequiredHeight / 2 - 400}px))`;
+            }
+
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+            }
+
+            setTimeout(() => {
+                const correctWord = getCorrectWord();
+                playAudio(correctWord);
+                resetLeaves(correctWord);
+            }, 500);
+        }
+
+        function playAudio(word) {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+            }
+            currentAudio = new Audio(`${word}.ogg`);
+            currentAudio.play().catch(error => {
+                console.error(`Error playing audio: ${error}`);
+            });
+        }
+
+        function handleLeafClick(event) {
+            const leaf = event.target.closest('.leaf');
+            if (leaf.dataset.correct === 'true') {
+                jumpToLeaf(leaf);
+                score++;
+                scoreDisplay.textContent = `Skor: ${score}`;
+            } else {
+                gameOver();
+            }
+        }
+
+        function gameOver() {
+            clearInterval(timerInterval);
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+            }
+
+            backgroundVideo.src = 'game_over_video.mp4';
+            backgroundVideo.play();
+
+            gameOverText.style.display = 'block';
+            restartButton.style.display = 'block';
+            finalScore.textContent = score;
+
+            frog.style.display = 'none';
+
+            document.querySelectorAll('.leaf').forEach(leaf => leaf.remove());
+
+            gameContainer.style.height = '800px';
+            gameContainer.style.transform = 'translate(-50%, -50%)';
+        }
+
+        function restartGame() {
+            resetTimer();
+            backgroundVideo.src = 'bg_video.mp4';
+            backgroundVideo.play();
+            startTimer();
+            score = 0;
+            currentRow = 200;
+            scoreDisplay.textContent = `Skor: ${score}`;
+            gameContainer.style.height = '800px';
+            gameContainer.style.transform = 'translate(-50%, -50%)';
+            gameOverText.style.display = 'none';
+            restartButton.style.display = 'none';
+            frog.style.display = 'flex';
+            frog.style.bottom = '20px';
+            const correctWord = getCorrectWord();
+            playAudio(correctWord);
+            createLeaves(correctWord);
+        }
+
+        function startGame() {
+            startButton.style.display = 'none';
+            backgroundVideo.src = 'bg_video.mp4';
+            backgroundVideo.play();
+            scoreDisplay.style.display = 'block';
+            gameContainer.style.display = 'block';
+            resetTimer();
+            startTimer();
+            const correctWord = getCorrectWord();
+            playAudio(correctWord);
+            createLeaves(correctWord);
+        }
+
+        restartButton.addEventListener('click', restartGame);
+        startButton.addEventListener('click', startGame);
+    </script>
+</body>
+</html>
